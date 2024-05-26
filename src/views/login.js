@@ -3,26 +3,72 @@ import React, { Component } from "react";
 import Card from "../components/card";
 import FormGroup from "../components/form-group";
 import {withRouter} from '../components/withRouter';
+import UsuarioService from "../app/service/usuarioService";
+//import  LocalStorageService  from "../app/service/localstorageService";
+import {mensagemErro} from '../components/toastr';
+//import CoookiesService from "../app/service/cookiesService";
+import {AuthContext} from '../main/provedorAutenticacao';
 
-class login extends Component {
+class Login extends Component {
+    
+    constructor() {
+        super();
+        this.service = new UsuarioService();
+    }
+
     state = {
         email : '',
-        senha : ''
+        senha : '',
     }
+  
     entrar = () => {
-        console.log("Email: ", this.state.email);
-        console.log("Senha: ", this.state.senha);
+        this.service.autenticar({
+            email: this.state.email,
+            senha: this.state.senha
+        })
+        .then(response=> {
+           //LocalStorageService.adicionarItem('_usuario_logado',response.data);
+           // CoookiesService.gravarCookies('idUsuarioCookie',response.data);
+            this.context.iniciarSessao(response.data);
+            this.props.router.navigate("/home");
+        })
+        .catch( erro=> {
+            mensagemErro(erro.response.data);
+        })
     }
-
+    /* outra possibilidade
+    entrar = async () => {
+        try {
+            await axios
+                .post('http://localhost:8081/api/usuarios/autenticar', {
+                    email: this.state.email,
+                    senha: this.state.senha
+                })
+                .then(response=> {
+                    this.props.router.navigate("/home");
+                })
+                .catch( erro=> {
+                    this.setState({
+                        mensagemErro : erro.response.data
+                    })
+                })
+        }catch(error=>{
+            this.setState({
+                mensagemErro : error.reponse
+            }) }) 
+    }
+    */
     prepareCadastrar = () => {
         this.props.router.navigate("/cadastro-usuarios");
     }
     render(){
+        
         return (
             <div className="row">
                 <div className="col-md-6" style={{position:'relative',left:'300px'}}>
                     <div className="bs-docs-section">
                         <Card title="Login">
+                          
                            <div className="row">
                                 <div className="col-lg-12">
                                     <div className="bs-component">
@@ -44,8 +90,12 @@ class login extends Component {
                                                     aria-describedby="senhaHelp" 
                                                     placeholder="Digite a senha!" />     
                                        </FormGroup>
-                                        <button className="btn btn-success" onClick={this.entrar} >Entrar</button>
-                                        <button className="btn btn-danger" onClick={this.prepareCadastrar}>Cadastrar</button>
+                                        <button className="btn btn-success" 
+                                                onClick={this.entrar} >
+                                                <i className="pi pi-sign-in"></i> Entrar</button>
+                                        <button className="btn btn-danger" 
+                                                onClick={this.prepareCadastrar}>
+                                                <i className="pi pi-plus"></i> Cadastrar</button>
                                         </fieldset>
                                     </div> 
                                 </div>
@@ -58,5 +108,7 @@ class login extends Component {
     }
 }
 
-const Login = withRouter(login);
-export default Login;
+Login.contextType = AuthContext;
+//const Login = withRouter(login);
+
+export default withRouter(Login);

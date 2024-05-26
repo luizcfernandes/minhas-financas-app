@@ -3,6 +3,10 @@ import React, { Component } from "react";
 import Card from "../components/card";
 import FormGroup from "../components/form-group";
 import  {withRouter}  from "../components/withRouter";
+import UsuarioService from "../app/service/usuarioService";
+import {mensagemSucesso,mensagemErro} from '../components/toastr';
+//import CoookiesService from "../app/service/cookiesService";
+import { AuthContext } from "../main/provedorAutenticacao";
 
 class CadastroUsuario extends Component {
     state = {
@@ -12,14 +16,45 @@ class CadastroUsuario extends Component {
         senhaRepeticao : ''
     }
 
+    constructor() {
+        super();
+        this.service = new UsuarioService();
+    }
+
+    
     cadastrar = () => {
-        console.log(this.state);
+       
+        const {nome,email,senha,senhaRepeticao} = this.state;
+        const usuario = {nome, email, senha, senhaRepeticao}
+        
+        try {
+            this.service.validar(usuario);
+        }catch(erro){
+            const msgs = erro.mensagens;
+            msgs.forEach(msg => {
+                mensagemErro(msg);
+            });
+            return false;
+        }
+        this.service
+                .salvar(usuario)
+                .then(response => {
+                    mensagemSucesso('Usuário cadastrado com sucesso!');
+                    this.props.router.navigate('/login');
+                })
+                .catch( error =>{
+                    mensagemErro(error.response.data);
+                });        
     }
 
     cancelar=()=>{
+
+        //CoookiesService.removerCookies('idUsuarioCookie');
         this.props.router.navigate("/login");
     }
+    
     render(){
+        console.log("-------Entrando Cadastro Usuario ----- Logado ? ---- ",this.context.isAutenticado);
         return (
             <div className="row">
                 <div className="col-md-6" style={{position:'relative',left:'300px'}}>
@@ -57,8 +92,12 @@ class CadastroUsuario extends Component {
                                                     onChange={e => this.setState({senhaRepeticao: e.target.value})}/>
                                     </FormGroup>
                                     <br />
-                                    <button className="btn btn-success" onClick={this.cadastrar} >Salvar</button>
-                                    <button className="btn btn-danger" onClick={this.cancelar}>Voltar</button>
+                                    <button className="btn btn-success" 
+                                            onClick={this.cadastrar} >
+                                            <i className="pi pi-save"></i> Salvar</button>
+                                    <button className="btn btn-danger" 
+                                            onClick={this.cancelar}> 
+                                            <i className="pi pi-times"></i> Cancelar</button>
                                 </div>
                             </div>
                         </div>
@@ -70,4 +109,6 @@ class CadastroUsuario extends Component {
     }
 
 }
+
+CadastroUsuario.contextType = AuthContext;
 export default withRouter(CadastroUsuario);
